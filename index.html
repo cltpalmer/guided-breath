@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guided Drawing Canvas</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        .canvas-container {
+            position: relative;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+        .color-bar {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #ffffff;
+            padding: 10px;
+            border-radius: 25px;
+            border: 2px solid #c5c5ff;
+        }
+        .color-option {
+            width: 30px;
+            height: 30px;
+            margin: 0 10px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .color-red { background-color: red; }
+        .color-orange { background-color: orange; }
+        .color-yellow { background-color: yellow; }
+        .colors-label {
+            margin-right: 15px;
+            font-size: 1.2em;
+            color: #000000;
+        }
+    </style>
+</head>
+<body>
+    <div class="canvas-container">
+        <canvas id="drawingCanvas" width="800" height="400"></canvas>
+        <canvas id="waveCanvas" width="800" height="400" style="position: absolute; top: 0; left: 0;"></canvas>
+    </div>
+    <div class="color-bar">
+        <span class="colors-label">colors</span>
+        <div class="color-option color-red" data-color="red"></div>
+        <div class="color-option color-orange" data-color="orange"></div>
+        <div class="color-option color-yellow" data-color="yellow"></div>
+    </div>
+
+    <script>
+        const drawingCanvas = document.getElementById('drawingCanvas');
+        const waveCanvas = document.getElementById('waveCanvas');
+        const drawingCtx = drawingCanvas.getContext('2d');
+        const waveCtx = waveCanvas.getContext('2d');
+        let currentColor = 'red';
+        let isDrawing = false;
+
+        // Draw wave path
+        function drawWavePath() {
+            waveCtx.strokeStyle = '#c5c5ff';
+            waveCtx.lineWidth = 4;
+            waveCtx.setLineDash([0, 0]);
+            waveCtx.beginPath();
+            for (let yOffset = 100; yOffset <= 300; yOffset += 50) {
+                waveCtx.moveTo(0, yOffset);
+                for (let x = 0; x <= waveCanvas.width; x++) {
+                    const y = yOffset + 20 * Math.sin((x / waveCanvas.width) * 4 * Math.PI);
+                    waveCtx.lineTo(x, y);
+                }
+            }
+            waveCtx.stroke();
+        }
+
+        drawWavePath();
+
+        // Handle color selection
+        document.querySelectorAll('.color-option').forEach(option => {
+            option.addEventListener('click', (e) => {
+                currentColor = e.target.getAttribute('data-color');
+            });
+        });
+
+        // Handle drawing
+        drawingCanvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            drawingCtx.strokeStyle = currentColor;
+            drawingCtx.lineWidth = 3;
+            drawingCtx.lineJoin = 'round';
+            drawingCtx.lineCap = 'round';
+            drawingCtx.beginPath();
+            drawingCtx.moveTo(e.offsetX, e.offsetY);
+        });
+
+        drawingCanvas.addEventListener('mousemove', (e) => {
+            if (isDrawing) {
+                drawingCtx.lineTo(e.offsetX, e.offsetY);
+                drawingCtx.stroke();
+            }
+        });
+
+        drawingCanvas.addEventListener('mouseup', () => {
+            isDrawing = false;
+            drawingCtx.closePath();
+        });
+
+        drawingCanvas.addEventListener('mouseout', () => {
+            isDrawing = false;
+            drawingCtx.closePath();
+        });
+
+        // Restrict drawing to the wave path
+        function restrictDrawing(e) {
+            if (!isDrawing) return;
+
+            const x = e.offsetX;
+            const y = e.offsetY;
+            const waveY = 100 + 20 * Math.sin((x / waveCanvas.width) * 4 * Math.PI);
+
+            if (Math.abs(y - waveY) > 20) {
+                isDrawing = false;
+                drawingCtx.closePath();
+            } else {
+                drawingCtx.lineTo(x, y);
+                drawingCtx.stroke();
+            }
+        }
+
+        drawingCanvas.addEventListener('mousemove', restrictDrawing);
+    </script>
+</body>
+</html>
